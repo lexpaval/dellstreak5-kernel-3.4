@@ -1,0 +1,11 @@
+export ARCH=arm
+
+# Linaro 4.7.3 Toolchain
+export CROSS_COMPILE=toolchain/android-toolchain-eabi-linaro-4.7/bin/arm-linux-androideabi-
+
+# AOSP 4.6.3 Toolchain
+export CROSS_COMPILE=toolchain/arm-linux-androideabi-4.6/prebuilt/linux-x86/bin/arm-linux-androideabi-
+
+make menuconfig
+make -j5
+make CFLAGS_MODULE=-fno-pic modules
