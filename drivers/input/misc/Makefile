@@ -61,3 +61,9 @@ obj-$(CONFIG_PMIC8058_OTHC)             += pmic8058-othc.o
 obj-$(CONFIG_INPUT_PMIC8058_VIBRA_MEMLESS) += pmic8058-vib-memless.o
 obj-$(CONFIG_BOSCH_BMA150)              += bma150.o
 obj-$(CONFIG_STM_LIS3DH)		+= lis3dh_acc.o
+
+ifdef CONFIG_HW_AUSTIN
+obj-$(CONFIG_BACK_COVER_DET)            += cover.o
+obj-$(CONFIG_LIGHT_SENSOR_QSD)          += lsensor_austin.o
+obj-$(CONFIG_PSENSOR_CM3603)            += psensor-cm3603.o
+endif

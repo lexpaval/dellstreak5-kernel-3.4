@@ -654,4 +654,31 @@ config STM_LIS3DH
           If you say yes here you get support for STMicroelectronics's
           acceleration sensors LIS3DH.
 
+config BACK_COVER_DET
+	tristate "detection for the removal of back cover"
+	depends on ARCH_MSM || ARCH_QSD8X50
+	default y
+	help
+	  Say Y here if you want support detection for the removal of back cover.
+	  To compile this driver as a module, choose M here: the
+	  module will be called lsensor.
+
+config LIGHT_SENSOR_QSD
+	bool "light sensor"
+	depends on ARCH_MSM || ARCH_QSD8X50
+	default y
+	help
+	  Say Y here if you want support for the Cpella CM3204 light sensor device.
+	  To compile this driver as a module, choose M here: the
+	  module will be called lsensor.
+
+config PSENSOR_CM3603
+	tristate "CAPELLA CM3603 short distance Proximity Sensor"
+	default y
+	help
+	  Say Y here if you want support for the CM3603 P-Sensor.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called psensor-cm3603.
+
 endif
