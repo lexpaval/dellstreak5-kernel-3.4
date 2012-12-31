@@ -123,6 +123,28 @@ config TOUCHSCREEN_AUO_PIXCIR
 	  To compile this driver as a module, choose M here: the
 	  module will be called auo-pixcir-ts.
 
+config TOUCHSCREEN_AUO
+	default y
+	tristate "AUO Touchscreen"
+	depends on ARCH_MSM_SCORPION && I2C
+	help
+	  Contact Menghan.Cheng.
+choice
+	depends on TOUCHSCREEN_AUO
+	prompt "Panel Type"
+	default AUO_5INCH_TOUCHSCREEN
+
+config AUO_5INCH_TOUCHSCREEN
+	bool "AUO 5 inch touchscreen"
+	---help---
+	  AUO 5" touchscreen 800*480
+
+config AUO_4P3INCH_TOUCHSCREEN
+	bool "AUO 4.3 inch touchscreen"
+	---help---
+	  AUO 4.3" touchscreen 480*272
+endchoice
+
 config TOUCHSCREEN_BITSY
 	tristate "Compaq iPAQ H3600 (Bitsy) touchscreen"
 	depends on SA1100_BITSY
