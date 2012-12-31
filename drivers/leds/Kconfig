@@ -582,6 +582,13 @@ config LEDS_TRIGGER_SLEEP
 	help
 	  This turns LEDs on when the screen is off but the cpu still running.
 
+config LEDS_QSD
+        bool "QSD Leds"
+        depends on ARCH_MSM || ARCH_QSD8X50
+        default y
+        help
+        qsd leds for austin, not supported in EVB
+
 comment "iptables trigger is under Netfilter config (LED target)"
 	depends on LEDS_TRIGGERS
 
