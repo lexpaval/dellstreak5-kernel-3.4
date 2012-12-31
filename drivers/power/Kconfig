@@ -494,4 +494,11 @@ config QPNP_BMS
 	  Say Y here to enable support for QPNP chip bms device.
 	  It registers a fuelgauge bms power supply to report
 	  State of Charge.
+
+config BATTERY_QSD
+        bool "QSD battery"
+        depends on ARCH_MSM || ARCH_QSD8X50
+        default y
+        help
+        qsd battery for austin, not supported in EVB
 endif # POWER_SUPPLY
