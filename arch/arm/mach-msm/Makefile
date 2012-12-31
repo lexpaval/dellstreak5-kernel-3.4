@@ -23,6 +23,8 @@ endif
 	endif
 endif
 
+obj-y += cust_mproc.o
+
 obj-y += acpuclock.o
 obj-$(CONFIG_ARCH_MSM_KRAIT) += acpuclock-krait.o
 ifdef CONFIG_ARCH_MSM_KRAIT
@@ -72,6 +74,11 @@ obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o remote_spinlock.o smd_private.o
 obj-$(CONFIG_MSM_SCM) += scm.o scm-boot.o
 obj-$(CONFIG_MSM_SECURE_IO) += scm-io.o
 obj-$(CONFIG_MSM_PIL) += peripheral-loader.o
+
+obj-$(CONFIG_LOADER_CONTROL) += bootloader.o
+obj-$(CONFIG_LOG_FILTER) += filter.o
+obj-$(CONFIG_PM_LOG) += pm_log.o
+
 obj-$(CONFIG_MSM_PIL) += scm-pas.o
 obj-$(CONFIG_MSM_PIL_QDSP6V3) += pil-q6v3.o
 obj-$(CONFIG_MSM_PIL_LPASS_QDSP6V4) += pil-q6v4.o pil-q6v4-lpass.o
@@ -179,12 +186,17 @@ obj-$(CONFIG_MACH_TROUT) += board-trout-keypad.o board-trout-panel.o
 obj-$(CONFIG_MACH_TROUT) += htc_akm_cal.o htc_wifi_nvs.o htc_acoustic.o
 obj-$(CONFIG_MACH_TROUT) += board-trout-mmc.o board-trout-wifi.o
 obj-$(CONFIG_ARCH_QSD8X50) += devices-qsd8x50.o clock-pcom-lookup.o
-obj-$(CONFIG_MACH_QSD8X50_SURF) += board-qsd8x50.o
-obj-$(CONFIG_MACH_QSD8X50_FFA) += board-qsd8x50.o
+
 ifdef CONFIG_HW_AUSTIN
         obj-$(CONFIG_MACH_QSD8X50_SURF) += board-qsd8x50_austin.o
         obj-$(CONFIG_MACH_QSD8X50_FFA)  += board-qsd8x50_austin.o
+else
+ifdef CONFIG_HW_SURF
+        obj-$(CONFIG_MACH_QSD8X50_SURF) += board-qsd8x50.o
+        obj-$(CONFIG_MACH_QSD8X50_FFA)  += board-qsd8x50.o
 endif
+endif
+
 obj-$(CONFIG_ARCH_MSM8X60) += devices-msm8x60.o clock-local.o clock-8x60.o acpuclock-8x60.o clock-pll.o
 obj-$(CONFIG_ARCH_MSM8X60) += clock-rpm.o
 obj-$(CONFIG_ARCH_MSM8X60) += saw-regulator.o
@@ -319,6 +331,10 @@ obj-$(CONFIG_TROUT_BATTCHG) += htc_battery.o
 
 obj-$(CONFIG_HTC_PWRSINK) += htc_pwrsink.o
 obj-$(CONFIG_HTC_HEADSET) += htc_headset.o
+
+obj-$(CONFIG_HW_AUSTIN) += bt-rfkill.o
+obj-$(CONFIG_HW_AUSTIN) += headset_det.o
+
 obj-$(CONFIG_MSM_RMT_STORAGE_CLIENT) += rmt_storage_client.o
 obj-$(CONFIG_MSM_SDIO_SMEM) += sdio_smem.o
 obj-$(CONFIG_MSM_RPM) += rpm.o

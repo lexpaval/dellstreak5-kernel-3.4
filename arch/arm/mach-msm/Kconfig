@@ -2748,4 +2748,46 @@ config MSM_CPU_PWRCTL
 	  stand alone power collapse operation. Selecting this option
 	  ensures that they are always off.
 
+config LOADER_CONTROL
+	depends on ARCH_QSD8X50
+	depends on MSM_STACKED_MEMORY
+	default y
+	bool "LOADER_CONTROL"
+	help
+	  Support for bootloader mode control.
+
+config LOG_FILTER
+	depends on ARCH_QSD8X50
+	depends on MSM_STACKED_MEMORY
+	default y
+	bool "Log Filter"
+	help
+	  Support for log filter.
+
+
+config PM_LOG
+	bool "Power Management log"
+	default y
+	help
+	  Enable power management log.
+	  
+
+config WLAN_ALLOC_STATIC_MEM
+        bool "Wlan Driver allocate bootmem"
+        default y
+	help
+            wlan driver use alloc_bootmem memory for size then 2 pages
+
+config CUSTOMER_KT
+	bool "Customer for KT"
+	default n
+	help
+	    Custom for KT
+
+config HDMI_BUGFIX
+	bool "HDMI bug fix"
+	default y
+	help
+	   fix hdmi issue at 720p
+
 endif
