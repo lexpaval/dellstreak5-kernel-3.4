@@ -1,7 +1,7 @@
 /* arch/arm/mach-msm/proc_comm.c
  *
  * Copyright (C) 2007-2008 Google, Inc.
- * Copyright (c) 2009-2012, Code Aurora Forum. All rights reserved.
+ * Copyright (c) 2009-2010, Code Aurora Forum. All rights reserved.
  * Author: Brian Swetland <swetland@google.com>
  *
  * This software is licensed under the terms of the GNU General Public
@@ -22,21 +22,109 @@
 #include <linux/module.h>
 #include <mach/msm_iomap.h>
 #include <mach/system.h>
-#include <mach/proc_comm.h>
+#include <linux/workqueue.h>
 
+#include "proc_comm.h"
 #include "smd_private.h"
+
+#if defined (CONFIG_QSD_OEM_RPC_VERSION_CHECK)
+#include <mach/smem_pc_oem_cmd.h>
+#include "oem_rpc_version_check.h"
+
+#define RPC_VERCHECK_ERROR_NOTIFY_PERIOD 60
+
+static int rpc_version_checked;
+
+static void rpc_version_check_show_errmsg_sys(struct work_struct *work);
+static void rpc_version_check_show_errmsg(struct work_struct *work);
+
+static DECLARE_WORK(crash_worker, rpc_version_check_show_errmsg);
+static DECLARE_WORK(crash_worker_sys, rpc_version_check_show_errmsg_sys);
+static struct workqueue_struct *crash_work_queue;
+
+static int version_check = 0;
+
+#ifdef CONFIG_HW_AUSTIN
+
+#define KEY_MODEM_RESET KEY_CAMERA
+#if !(defined (CONFIG_MACH_EVB) || defined (CONFIG_MACH_EVT0))
+
+#define MODEM_CRASH_NOTIFY_USER
+
+extern void qi2ccapkybd_set_led(unsigned int light);
+
+#define MODEM_CRASH_NOTIFY_USER_0 do {qi2ccapkybd_set_led(0x0);} while(0)
+#define MODEM_CRASH_NOTIFY_USER_1 do {qi2ccapkybd_set_led(0xFFFFFF);} while(0)
+
+#endif
+
+#endif
+
+#if defined (MODEM_CRASH_NOTIFY_USER)
+void rpc_version_check_show_err(void)
+{
+	uint32_t loop;
+	for(loop = 0; loop < 10; loop++)
+	{
+		MODEM_CRASH_NOTIFY_USER_1;
+		msleep(100);
+        MODEM_CRASH_NOTIFY_USER_0;
+		msleep(100);
+	}
+}
+#else
+void rpc_version_check_show_err(void) {}
+#endif
+
+static void rpc_version_check_show_errmsg_sys(struct work_struct *work)
+{
+	INIT_WORK(&crash_worker, rpc_version_check_show_errmsg);
+
+	crash_work_queue = create_singlethread_workqueue("rpc_version_check");
+
+	queue_work(crash_work_queue, &crash_worker);
+}
+
+static void rpc_version_check_show_errmsg(struct work_struct *work)
+{
+	while(1)
+	{
+		rpc_version_check_show_err();
+		msleep(RPC_VERCHECK_ERROR_NOTIFY_PERIOD * 1000);
+	}
+}
+
+static int rpc_version_check_func(void)
+{
+	int arg1, arg2 = 0, ret_result;
+
+	arg1 = SMEM_PC_OEM_CHECK_VERSION;
+	ret_result = msm_proc_comm(PCOM_CUSTOMER_CMD1, &arg1, &arg2);
+
+	if ((ret_result != 0) ||
+			(arg2 != rpc_version_check_magic_number))
+	{
+		printk(KERN_ERR "%s, msm_proc_comm result %d, magic number: %x(M):%x(A)\n",
+				__func__, ret_result, arg2, rpc_version_check_magic_number);
+		INIT_WORK(&crash_worker_sys, rpc_version_check_show_errmsg_sys);
+
+		schedule_work(&crash_worker_sys);
+	}
+	return ret_result;
+}
+#endif /* CONFIG_QSD_OEM_RPC_VERSION_CHECK */
+
+#if defined(CONFIG_ARCH_MSM7X30)
+#define MSM_TRIG_A2M_PC_INT (writel(1 << 6, MSM_GCC_BASE + 0x8))
+#elif defined(CONFIG_ARCH_MSM8X60)
+#define MSM_TRIG_A2M_PC_INT (writel(1 << 5, MSM_GCC_BASE + 0x8))
+#else
+#define MSM_TRIG_A2M_PC_INT (writel(1, MSM_CSR_BASE + 0x400 + (6) * 4))
+#endif
 
 static inline void notify_other_proc_comm(void)
 {
-	/* Make sure the write completes before interrupt */
-	wmb();
-#if defined(CONFIG_ARCH_MSM7X30)
-	__raw_writel(1 << 6, MSM_APCS_GCC_BASE + 0x8);
-#elif defined(CONFIG_ARCH_MSM8X60)
-	__raw_writel(1 << 5, MSM_GCC_BASE + 0x8);
-#else
-	__raw_writel(1, MSM_CSR_BASE + 0x400 + (6) * 4);
-#endif
+	MSM_TRIG_A2M_PC_INT;
 }
 
 #define APP_COMMAND 0x00
@@ -50,7 +138,11 @@ static inline void notify_other_proc_comm(void)
 #define MDM_DATA2   0x1C
 
 static DEFINE_SPINLOCK(proc_comm_lock);
-static int msm_proc_comm_disable;
+#if defined (CONFIG_QSD_OEM_RPC_VERSION_CHECK)
+static DEFINE_SPINLOCK(proc_comm_version_lock);
+#endif /* CONFIG_QSD_OEM_RPC_VERSION_CHECK */
+
+int (*msm_check_for_modem_crash)(void);
 
 /* Poll for a state change, checking for possible
  * modem crashes along the way (so we don't wait
@@ -63,14 +155,21 @@ static int msm_proc_comm_disable;
 static int proc_comm_wait_for(unsigned addr, unsigned value)
 {
 	while (1) {
-		/* Barrier here prevents excessive spinning */
-		mb();
-		if (readl_relaxed(addr) == value)
+		if (readl(addr) == value)
 			return 0;
-
+#if defined (CONFIG_QSD_ARM9_CRASH_FUNCTION)
+		if (smsm_check_for_modem_crash())
+		{
+			int ret = smsm_check_for_modem_crash();
+			if (ret)
+			{
+				return ret;
+			}
+		}
+#else /* CONFIG_QSD_ARM9_CRASH_FUNCTION */
 		if (smsm_check_for_modem_crash())
 			return -EAGAIN;
-
+#endif /* CONFIG_QSD_ARM9_CRASH_FUNCTION */
 		udelay(5);
 	}
 }
@@ -86,14 +185,12 @@ again:
 	if (proc_comm_wait_for(base + MDM_STATUS, PCOM_READY))
 		goto again;
 
-	writel_relaxed(PCOM_RESET_MODEM, base + APP_COMMAND);
-	writel_relaxed(0, base + APP_DATA1);
-	writel_relaxed(0, base + APP_DATA2);
+	writel(PCOM_RESET_MODEM, base + APP_COMMAND);
+	writel(0, base + APP_DATA1);
+	writel(0, base + APP_DATA2);
 
 	spin_unlock_irqrestore(&proc_comm_lock, flags);
 
-	/* Make sure the writes complete before notifying the other side */
-	wmb();
 	notify_other_proc_comm();
 
 	return;
@@ -105,54 +202,60 @@ int msm_proc_comm(unsigned cmd, unsigned *data1, unsigned *data2)
 	unsigned base = (unsigned)MSM_SHARED_RAM_BASE;
 	unsigned long flags;
 	int ret;
+#if defined (CONFIG_QSD_OEM_RPC_VERSION_CHECK)
+	if (version_check && rpc_version_checked == 0)
+	{
+		spin_lock_irqsave(&proc_comm_version_lock, flags);
+		rpc_version_checked = 1;
+		spin_unlock_irqrestore(&proc_comm_version_lock, flags);
 
+		rpc_version_check_func();
+	}
+#endif /* CONFIG_QSD_OEM_RPC_VERSION_CHECK */
 	spin_lock_irqsave(&proc_comm_lock, flags);
 
-	if (msm_proc_comm_disable) {
-		ret = -EIO;
-		goto end;
-	}
-
-
 again:
+#if defined (CONFIG_QSD_ARM9_CRASH_FUNCTION)
+	if ((ret = proc_comm_wait_for(base + MDM_STATUS, PCOM_READY)) == -EAGAIN)
+		goto again;
+	else if (ret != 0)
+		goto fail;
+#else /* CONFIG_QSD_ARM9_CRASH_FUNCTION */
 	if (proc_comm_wait_for(base + MDM_STATUS, PCOM_READY))
 		goto again;
+#endif /* CONFIG_QSD_ARM9_CRASH_FUNCTION */
+	writel(cmd, base + APP_COMMAND);
+	writel(data1 ? *data1 : 0, base + APP_DATA1);
+	writel(data2 ? *data2 : 0, base + APP_DATA2);
 
-	writel_relaxed(cmd, base + APP_COMMAND);
-	writel_relaxed(data1 ? *data1 : 0, base + APP_DATA1);
-	writel_relaxed(data2 ? *data2 : 0, base + APP_DATA2);
-
-	/* Make sure the writes complete before notifying the other side */
-	wmb();
 	notify_other_proc_comm();
 
 	if (proc_comm_wait_for(base + APP_COMMAND, PCOM_CMD_DONE))
 		goto again;
 
-	if (readl_relaxed(base + APP_STATUS) == PCOM_CMD_SUCCESS) {
+	if (readl(base + APP_STATUS) == PCOM_CMD_SUCCESS) {
 		if (data1)
-			*data1 = readl_relaxed(base + APP_DATA1);
+			*data1 = readl(base + APP_DATA1);
 		if (data2)
-			*data2 = readl_relaxed(base + APP_DATA2);
+			*data2 = readl(base + APP_DATA2);
 		ret = 0;
 	} else {
 		ret = -EIO;
 	}
 
-	writel_relaxed(PCOM_CMD_IDLE, base + APP_COMMAND);
-
-	switch (cmd) {
-	case PCOM_RESET_CHIP:
-	case PCOM_RESET_CHIP_IMM:
-	case PCOM_RESET_APPS:
-		msm_proc_comm_disable = 1;
-		printk(KERN_ERR "msm: proc_comm: proc comm disabled\n");
-		break;
-	}
-end:
-	/* Make sure the writes complete before returning */
-	wmb();
+	writel(PCOM_CMD_IDLE, base + APP_COMMAND);
+#if defined (CONFIG_QSD_ARM9_CRASH_FUNCTION)
+fail:
+#endif /* CONFIG_QSD_ARM9_CRASH_FUNCTION */
 	spin_unlock_irqrestore(&proc_comm_lock, flags);
 	return ret;
 }
 EXPORT_SYMBOL(msm_proc_comm);
+static int __init msm_proc_comm_late_init(void)
+{
+#if defined (CONFIG_QSD_OEM_RPC_VERSION_CHECK)
+	version_check = 1;
+#endif
+	return 0;
+}
+late_initcall(msm_proc_comm_late_init);
