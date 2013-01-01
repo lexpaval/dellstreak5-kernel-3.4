@@ -2486,6 +2486,7 @@ menu "DSC Team Phoenix options"
 	default n
         help
            Patch by hPa. Unsure what it does.
+endmenu
 
 source "net/Kconfig"
 
