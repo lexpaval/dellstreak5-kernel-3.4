@@ -2466,6 +2466,27 @@ config ARM_CPU_SUSPEND
 
 endmenu
 
+menu "DSC Team Phoenix options"
+     config DSC_PORTRAIT
+        bool "Touchscreen portrait patch"
+        default n
+        help
+           Patch by hPa. Rotate touch coordinates.
+           Required for 180 degree rotation (CM7.2)	
+     config DSC_ROTATE_MATRIX
+        bool "Rotate matrix"
+        default n
+        depends on DSC_PORTRAIT
+        help
+           Patch by hPa.
+           Rotate matrix, so 0 degree rotation will work.
+	   Required for MIUI.
+     config DSC_FORCE_SPEAKER_ENABLE
+        bool "Force speaker on"
+	default n
+        help
+           Patch by hPa. Unsure what it does.
+
 source "net/Kconfig"
 
 source "drivers/Kconfig"
