@@ -22,6 +22,7 @@
 #include <linux/sched.h>
 #include <linux/wait.h>
 #include <linux/uaccess.h>
+#include <linux/slab.h>
 
 #include <linux/msm_audio.h>
 
@@ -165,7 +166,7 @@ static ssize_t mp3_write(struct file *file, const char __user *buf,
 	return buf - start;
 }
 
-static int mp3_fsync(struct file *f, int datasync)
+static int mp3_fsync(struct file *f, loff_t ppos1, loff_t ppos2, int datasync)
 {
 	struct mp3 *mp3 = f->private_data;
 	if (mp3->ac)

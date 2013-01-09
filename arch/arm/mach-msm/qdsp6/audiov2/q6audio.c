@@ -26,6 +26,7 @@
 #include <linux/android_pmem.h>
 #include <linux/gpio.h>
 #include <linux/pm_qos.h>
+#include <linux/slab.h>
 
 #include <mach/msm_qdsp6_audiov2.h>
 #include <mach/cpuidle.h>

@@ -23,6 +23,7 @@
 #include <linux/sched.h>
 #include <linux/wait.h>
 #include <linux/uaccess.h>
+#include <linux/slab.h>
 
 #include <linux/msm_audio.h>
 

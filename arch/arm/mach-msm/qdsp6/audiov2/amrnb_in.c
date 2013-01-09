@@ -21,6 +21,7 @@
 #include <linux/sched.h>
 #include <linux/wait.h>
 #include <linux/uaccess.h>
+#include <linux/slab.h>
 
 #include <linux/msm_audio_amrnb.h>
 #include <mach/msm_qdsp6_audiov2.h>
