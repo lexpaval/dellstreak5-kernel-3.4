@@ -47,6 +47,10 @@
 #define MSM_TMR_BASE          MSM_CSR_BASE
 #define MSM_TMR_SIZE          SZ_4K
 
+#define MSM_DMOV_BASE         IOMEM(0xFA002000)
+#define MSM_DMOV_PHYS         0xA9700000
+#define MSM_DMOV_SIZE         SZ_4K
+
 #define MSM_GPIO1_BASE        IOMEM(0xFA003000)
 #define MSM_GPIO1_PHYS        0xA9000000
 #define MSM_GPIO1_SIZE        SZ_4K
@@ -83,6 +87,18 @@
 #define MSM_UART3_PHYS        0xA9C00000
 #define MSM_UART3_SIZE        SZ_4K
 
+#ifdef CONFIG_MSM_DEBUG_UART
+#define MSM_DEBUG_UART_BASE   0xFB000000
+#if CONFIG_MSM_DEBUG_UART == 1
+#define MSM_DEBUG_UART_PHYS   MSM_UART1_PHYS
+#elif CONFIG_MSM_DEBUG_UART == 2
+#define MSM_DEBUG_UART_PHYS   MSM_UART2_PHYS
+#elif CONFIG_MSM_DEBUG_UART == 3
+#define MSM_DEBUG_UART_PHYS   MSM_UART3_PHYS
+#endif
+#define MSM_DEBUG_UART_SIZE   SZ_4K
+#endif
+
 #define MSM_MDC_BASE	      IOMEM(0xFA200000)
 #define MSM_MDC_PHYS	      0xAA500000
 #define MSM_MDC_SIZE	      SZ_1M
@@ -90,5 +106,11 @@
 #define MSM_AD5_BASE          IOMEM(0xFA300000)
 #define MSM_AD5_PHYS          0xAC000000
 #define MSM_AD5_SIZE          (SZ_1M*13)
+
+// Jagan+
+#define MSM_MTRACE_BUF_BASE   IOMEM(0xFB009000)
+#define MSM_MTRACE_BUF_PHYS   0x00200000
+#define MSM_MTRACE_BUF_SIZE   (SZ_1M*41)
+// Jagan-
 
 #endif
