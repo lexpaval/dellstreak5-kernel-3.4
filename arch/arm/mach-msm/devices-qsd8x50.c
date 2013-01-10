@@ -33,6 +33,7 @@
 #include <mach/usbdiag.h>
 #include <mach/rpc_hsusb.h>
 #include "pm.h"
+#include "irq.h"
 
 struct platform_device msm8x50_device_acpuclk = {
 	.name		= "acpuclk-8x50",

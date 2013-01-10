@@ -113,4 +113,9 @@
 #define MSM_MTRACE_BUF_SIZE   (SZ_1M*41)
 // Jagan-
 
+//Possible bloat, needed for compiler
+#define MSM_CFG_CTL_BASE	IOMEM(0xFA105000)	/*  4K */
+#define MSM_SCU_BASE		IOMEM(0xFA104000)	/*  4K */
+#define MSM_L2CC_BASE		IOMEM(0xFA701000)	/*  4K */
+
 #endif
